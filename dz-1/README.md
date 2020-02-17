@@ -1,6 +1,6 @@
 # Домашнее задание 1 
 
-Дано:
+##Дано:
 ```
 Обновить ядро в базовой системе
 Цель: Студент получит навыки работы с Git, Vagrant, Packer и публикацией готовых образов в Vagrant Cloud.
@@ -13,3 +13,54 @@
 ДЗ со звездочкой: Ядро собрано из исходников
 ДЗ с **: В вашем образе нормально работают VirtualBox Shared Folders
 ```
+##Решение:
+
+1. Установлено ядро kernel-ml
+```
+sudo yum install -y http://www.elrepo.org/elrepo-release-7.7-1.el7.elrepo.noarch.rpm
+sudo yum --enablerepo elrepo-kernel install kernel-ml -y
+grub2-mkconfig -o /boot/grub2/grub.cfg
+grub2-set-default 0
+reboot
+```
+2. Скачаны исходники ядра содержащие модуль файловой системы vboxfs в данном случае 5.6.0-rc1  
+(в текущей стабильной версии ядра 5.5.4 поддержка vboxsf убрана)  
+```
+https://git.kernel.org/torvalds/t/linux-5.6-rc1.tar.gz
+```
+3. Установлены необходимые для компиляции ядра пакеты
+```
+sudo yum install -y ncurses-devel make gcc bc bison flex elfutils-libelf-devel openssl-devel grub2 rpm-build
+```
+4. Скопирован конфиг-файл текущего ядра, c помощью make menuconfig в ядро включены драйверы 
+```
+CONFIG_VBOXGUEST=y
+CONFIG_VBOXSF_FS=y
+```
+5. Ядро скомпилированно и установлено
+
+```
+make -j 3 rpm-pkg
+sudo rmp -ivh kernel-5.6.0_rc1-1.x86_64.rpm
+```
+6. Удалены старые ядра и пакеты необходимые для компиляции
+```
+sudo yum remove kernel-ml kernel.x86_64
+sudo yum remove ncurses-devel make gcc bc bison flex elfutils-libelf-devel openssl-devel grub2 rpm-build
+```
+7. Обновлено меню загрузки
+```
+grub2-mkconfig -o /boot/grub2/grub.cfg
+grub2-set-default 0
+```
+8. В Vagrantfile изменена строка синхронизации папок.
+```
+config.vm.synced_folder ".", "/vagrant", disabled: false, type: "virtualbox"
+```
+9 После перезагрузки в виртуальной машине доступеп каталог хостовой машины примонтированный в точку монтирования /vagrant 
+```
+[vagrant@kernel-update ~]$ mount |grep vagrant
+vagrant on /vagrant type vboxsf (rw,relatime)
+```
+
+
