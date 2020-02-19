@@ -3,11 +3,11 @@ MACHINES = {
   # VM name "kernel update"
   :"kernel-update" => {
               # VM box
-              :box_name => "centos/7",
+              :box_name => "maratgalimov/centos-7-5vboxfs",
               # VM CPU count
-              :cpus => 3,
+              :cpus => 2,
               # VM RAM size (Mb)
-              :memory => 2048,
+              :memory => 1024,
               # networks
               :net => [],
               # forwarded ports

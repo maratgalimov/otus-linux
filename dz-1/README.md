@@ -23,16 +23,17 @@ grub2-mkconfig -o /boot/grub2/grub.cfg
 grub2-set-default 0
 reboot
 ```
-2. Скачаны исходники ядра содержащие модуль файловой системы vboxfs в данном случае 5.6.0-rc1  
+2. Скачаны исходники ядра содержащие модуль файловой системы vboxfs в данном случае 5.6.0-rc2  
 (в текущей стабильной версии ядра 5.5.4 поддержка vboxsf убрана)  
 ```
-https://git.kernel.org/torvalds/t/linux-5.6-rc1.tar.gz
+https://git.kernel.org/torvalds/t/linux-5.6-rc2.tar.gz
 ```
 3. Установлены необходимые для компиляции ядра пакеты
 ```
 sudo yum install -y ncurses-devel make gcc bc bison flex elfutils-libelf-devel openssl-devel grub2 rpm-build
 ```
-4. Скопирован конфиг-файл текущего ядра, c помощью make menuconfig в ядро включены драйверы 
+4. Создан конфиг-файл загруженного ядра c помощью make localmodconfig, с помощью make menuconfig  
+   в ядро включены драйверы:
 ```
 CONFIG_VBOXGUEST=y
 CONFIG_VBOXSF_FS=y
@@ -41,7 +42,7 @@ CONFIG_VBOXSF_FS=y
 
 ```
 make -j 3 rpm-pkg
-sudo rmp -ivh kernel-5.6.0_rc1-1.x86_64.rpm
+sudo rmp -ivh kernel-5.6.0_rc2-1.x86_64.rpm
 ```
 6. Удалены старые ядра и пакеты необходимые для компиляции
 ```
@@ -57,10 +58,30 @@ grub2-set-default 0
 ```
 config.vm.synced_folder ".", "/vagrant", disabled: false, type: "virtualbox"
 ```
-9 После перезагрузки в виртуальной машине доступеп каталог хостовой машины примонтированный в точку монтирования /vagrant 
+9. После перезагрузки в виртуальной машине доступеп каталог хостовой машины примонтированный в точку монтирования /vagrant 
 ```
 [vagrant@kernel-update ~]$ mount |grep vagrant
 vagrant on /vagrant type vboxsf (rw,relatime)
 ```
+
+## Свой vagrant box
+
+1. Устанавливаем публичный ключ vagrant.pub
+```
+cat vagrant.pub > /home/vagrant/.ssh/authorized_keys
+```
+2. Создаем свой vagrant box
+```
+vagrant package --base 'local-test_kernel-update_1582053796020_23949' --output '5.6.0_rc2_vboxfs.box'
+```
+3. После проверок vagrant box, публикуем в vagrant cloud
+```
+vagrant cloud auth login
+vagrant cloud publish --release maratgalimov/centos-7-5vboxfs 1.0 virtualbox /home/mauzer/otus/local-test/5.6.0_rc2_vboxfs.box
+```
+## В результате:
+
+Vagrantfile описывает виртуальную машину создаваемую из самостоятельно собранного и опубликованного vagrant box  
+При загрузке виртуалная машина монтирует каталог хост-машины в котором распологается Vagrantfile, в точку монтирования /vagrant посредством vboxfs
 
 
